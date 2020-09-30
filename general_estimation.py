@@ -64,8 +64,6 @@ class SimResult:
         plt.show()
 
 
-
-
 def trapping_set_search(alist_file, save_ts=False):
     ldpc_paras = cc.get_ldpc_code_params(alist_file, compute_matrix=True)
     n_v = ldpc_paras['n_vnodes']
@@ -74,8 +72,8 @@ def trapping_set_search(alist_file, save_ts=False):
     messages = np.zeros([1, n_bits_message])
 
     # bias parameters for finding trapping set
-    epsilon1 = 3.5
-    gamma = 0.7
+    epsilon1 = 3.2
+    gamma = 0.75
     epsilon2 = 1 - gamma
 
     # parameters of LDPC codes
@@ -135,23 +133,22 @@ def trapping_set_search(alist_file, save_ts=False):
                         print(bias_bits)
                         # input('press enter to continue')
 
-                        if str(ts_size) in ts_dict.keys():
-                            if ts_v_bits.tolist() not in ts_dict[str(ts_size)]:
-                                ts_dict[str(ts_size)].append(ts_v_bits.tolist())
+                        if tuple(ts_size) in ts_dict.keys():
+                            if ts_v_bits.tolist() not in ts_dict[tuple(ts_size)]:
+                                ts_dict[tuple(ts_size)].append(ts_v_bits.tolist())
                         else:
-                            ts_dict[str(ts_size)] = []
-                            ts_dict[str(ts_size)].append(ts_v_bits.tolist())
+                            ts_dict[tuple(ts_size)] = []
+                            ts_dict[tuple(ts_size)].append(ts_v_bits.tolist())
 
     if save_ts:
-        save_path = 'trapping_set_folder/general_SNR_' + str(snr) + '_' + str(n_v) + '_' + str(n_v - n_c) + '_' + str(epsilon1) + '_ts_dict.npy'
+        save_path = 'trapping_set_folder/tuple_general_SNR_' + str(snr) + '_' + str(n_v) + '_' + str(n_v - n_c) + '_' + str(epsilon1) + '_ts_dict.npy'
         np.save(save_path, ts_dict)
 
     return ts_dict
 
 
-
 def general_IS(bias_bits, epsilon, ldpc_paras, snrs):
-    n_trials = 50
+    n_trials = 200
     n_bits = ldpc_paras['n_vnodes'] - ldpc_paras['n_cnodes']
     message =  np.zeros([1, n_bits])
     c = encoder(message, ldpc_paras)
@@ -173,12 +170,24 @@ def general_IS(bias_bits, epsilon, ldpc_paras, snrs):
 
             c_tile = np.tile(c, [len(bias_bits), 1])
 
-            llr_input = 4*y*snr_linear
-            c_hat = decoder(llr_input, ldpc_paras)
-            ber_is_value = ber_IS(c_tile, c_hat, weights)
-            fer_is_value, _ = fer_IS(c_tile, c_hat, weights)
-            bers_per_snr.append(ber_is_value)
-            fers_per_snr.append(fer_is_value)
+            for i in range(len(bias_bits)):
+                y_temp = y[i,:]
+                weight = [weights[i]]
+                llr_input_temp = 4*y_temp*snr_linear
+                llr_input_temp = llr_input_temp.reshape((1, y.shape[1]))
+                c_hat_temp = decoder(llr_input_temp, ldpc_paras)
+                fer = fer_IS(c, c_hat_temp, weight)
+                ber = ber_IS(c, c_hat_temp, weight)
+                bers_per_snr.append(ber)
+                fers_per_snr.append(fer)
+
+
+            # llr_input = 4*y*snr_linear
+            # c_hat = decoder(llr_input, ldpc_paras)
+            # ber_is_value = ber_IS(c_tile, c_hat, weights)
+            # fer_is_value, _ = fer_IS(c_tile, c_hat, weights)
+            # bers_per_snr.append(ber_is_value)
+            # fers_per_snr.append(fer_is_value)
 
         fer_mean = np.mean(fers_per_snr)
         fer_std = np.std(fers_per_snr)
@@ -199,7 +208,7 @@ def general_IS(bias_bits, epsilon, ldpc_paras, snrs):
 
 
 def monte_carlo(ldpc_paras ,snrs):
-    n_trials = 200
+    n_trials = 800
     n_bits = ldpc_paras['n_vnodes'] - ldpc_paras['n_cnodes']
     message =  np.zeros([1, n_bits])
     c = encoder(message, ldpc_paras)
@@ -245,56 +254,61 @@ def monte_carlo(ldpc_paras ,snrs):
     return result
 
 
-
-if __name__ == '__main__':
-    alist_file = 'code_matrix/96_3_963.txt'
-    # ts = trapping_set_search(alist_file, save_ts=True)
-
-    ts_set_file = 'trapping_set_folder/general_SNR_4_96_48_3_ts_dict.npy'
-    ts_set_dict = np.load(ts_set_file, allow_pickle='True').item()
+def ts_statics(ts_file, paras):
+    ts_set_dict = np.load(ts_file, allow_pickle='True').item()
     for key in ts_set_dict.keys():
+
         print(key + ': %d' %len(ts_set_dict[key]))
 
+    ts_sort_list = sort_ts(ts_file, paras)
+    print(ts_sort_list)
 
-    params = cc.get_ldpc_code_params(alist_file, compute_matrix=True)
-    # ts_sort_list = sort_ts(ts_set_file, params)
-    # print(ts_sort_list)
 
-    # test importance sampling part
-    bias_bits_list = []
-    bias_bits_list.append([1, 17, 42, 54])
-    bias_bits_list.append([1, 44, 57, 89, 92])
-    bias_bits_list.append([5, 30, 60, 66])
-    bias_bits_list.append([12, 61, 79])
 
-    #epsilon = 1.9982
-    epsilon = 0
-    snrs = np.linspace(0, 5, 6)
+if __name__ == '__main__':
+    alist_file = 'code_matrix/bg_mat.txt'
+    ts = trapping_set_search(alist_file, save_ts=True)
 
-    result_is = general_IS(bias_bits_list, epsilon, params, snrs)
-    result_mc = monte_carlo(params, snrs)
-
-    # calculate coefficient of variation
-    result_is.calc_cv()
-    result_mc.calc_cv()
-
-    print('FERS mean:')
-    print(result_is.fers_mean)
-    print(result_mc.fers_mean)
-
-    print('BERs mean:')
-    print(result_is.bers_mean)
-    print(result_mc.bers_mean)
-
-    print('FERs std:')
-    print(result_is.fers_std)
-    print(result_mc.fers_std)
-
-    print('BERs std:')
-    print(result_is.bers_std)
-    print(result_mc.bers_std)
-
-    result_is.plot(result_mc)
+    # ts_set_file = 'trapping_set_folder/general_SNR_3_136_44_3.5_ts_dict.npy'
+    # params = cc.get_ldpc_code_params(alist_file, compute_matrix=True)
+    # ts_statics(ts_set_file, params)
+    # input('press enter to continue, now check domiant trapping sets')
+    #
+    # # test importance sampling part
+    # bias_bits_list = []
+    # bias_bits_list.append([1, 17, 42, 54])
+    # bias_bits_list.append([1, 44, 57, 89, 92])
+    # bias_bits_list.append([5, 30, 60, 66])
+    # bias_bits_list.append([12, 61, 79])
+    #
+    # #epsilon = 1.9982
+    # epsilon = 1.5
+    # snrs = np.linspace(0, 5, 6)
+    #
+    # result_is = general_IS(bias_bits_list, epsilon, params, snrs)
+    # result_mc = monte_carlo(params, snrs)
+    #
+    # # calculate coefficient of variation
+    # result_is.calc_cv()
+    # result_mc.calc_cv()
+    #
+    # print('FERS mean:')
+    # print(result_is.fers_mean)
+    # print(result_mc.fers_mean)
+    #
+    # print('BERs mean:')
+    # print(result_is.bers_mean)
+    # print(result_mc.bers_mean)
+    #
+    # print('FERs std:')
+    # print(result_is.fers_std)
+    # print(result_mc.fers_std)
+    #
+    # print('BERs std:')
+    # print(result_is.bers_std)
+    # print(result_mc.bers_std)
+    #
+    # result_is.plot(result_mc)
 
 
 

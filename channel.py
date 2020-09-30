@@ -8,7 +8,7 @@ from commpy.utilities import signal_power
 def awgn_MC(x, snr, return_noise = False):
     now = datetime.now()
     rng = rnd.default_rng(now.microsecond)
-    linear_snr = 10 ** (snr / 20)
+    linear_snr = 10 ** (snr / 10)
 
     sig_power = signal_power(x.flatten())
     noise_sigma = sig_power / linear_snr

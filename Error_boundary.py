@@ -13,7 +13,7 @@ def search_boundary(ts, ldpc_paras):
     :return: distance from the error area
     """
     H = ldpc_paras['parity_check_matrix']
-    n_bits = 44
+    n_bits = ldpc_paras['n_vnodes'] - ldpc_paras['n_cnodes']
     messages = np.zeros([1, n_bits])
     c = encoder(messages, ldpc_paras)
     x = pow(-1, c)
@@ -57,7 +57,7 @@ def sort_ts(ts_file, ldpc_paras):
             de_square = search_boundary(ts, ldpc_paras)
             ts_sort_list.append([ts, de_square])
             print('trapping set size: ' + key)
-            print('de square is %f' %de_square)
+            print('de square is %f' % de_square)
 
     ts_sort_list = sorted(ts_sort_list, key=itemgetter(1))
     return ts_sort_list

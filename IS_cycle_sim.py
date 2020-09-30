@@ -32,8 +32,6 @@ def IS_cycle_sim(cycle_nodes_file, code_alist, snrs, n_trials, plot):
                 bias_bits = np.array(cycle_nodes.iloc[0, :])
                 bias_bits = bias_bits[np.where(~np.isnan(bias_bits))]
                 bias_bits = bias_bits.tolist()
-                bias_bits = np.linspace(0, 5, 6)
-
 
                 # encoding and mapping
                 c = encoder(message, paras)
@@ -149,8 +147,6 @@ if __name__ == '__main__':
     print(mc_nums)
     print(mc_bers)
     input('here to pause')
-
-
 
     snrs = np.linspace(0, 15, 16, dtype=int)
     n_trails = 20

@@ -74,14 +74,14 @@ c = np.concatenate([c,d], axis=0)
 print(c)
 print(np.mean(c))
 
-a = np.array([[1, 2, 3, 4 ,5],
-              [10, 20, 30, 40, 50]])
-print(a[1,:].shape)
-b = a[1,:]
-print(b.ndim)
+a_list = [4, 2]
+a_tuple = tuple(a_list)
+print(a_tuple)
+print(a_tuple[0])
 
+import commpy.channelcoding as cc
 
-a = [1, 1, 1, 1]
-aa = [2, 2, 2, 2]
-bb = [i/j for i,j in zip(a, aa)]
-print(bb)
+ldpc_paras = cc.get_ldpc_code_params('code_matrix/96_3_963.txt')
+vnode_degree = ldpc_paras['vnode_deg_list']
+print(vnode_degree)
+
