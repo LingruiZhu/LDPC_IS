@@ -78,10 +78,57 @@ a_list = [4, 2]
 a_tuple = tuple(a_list)
 print(a_tuple)
 print(a_tuple[0])
+print(a_tuple[1])
 
-import commpy.channelcoding as cc
+# test different methods of calculating the stand deviation
+import numpy.random as rnd
+from datetime import datetime
 
-ldpc_paras = cc.get_ldpc_code_params('code_matrix/96_3_963.txt')
-vnode_degree = ldpc_paras['vnode_deg_list']
-print(vnode_degree)
+now = datetime.now()
+rng = rnd.default_rng(now.microsecond)
 
+mu = 0
+sigma = 2
+n_samples = 1000
+a = rng.normal(0, 2, [n_samples, 1])
+a2 = a.reshape([10, 100])
+a2_sup = np.mean(a2, axis=0)
+print(a2_sup.shape)
+
+std1 = np.std(a)
+mean1 = np.mean(a)
+print(mean1, std1)
+
+std2 = np.std(a2_sup)
+mean2 = np.mean(a2_sup)
+print(mean2, std2)
+
+import math
+from scipy import stats
+import matplotlib.pyplot as plt
+
+
+mu = 0
+variance = 1
+sigma = math.sqrt(variance)
+x = np.linspace(mu - 5*sigma, mu + 5*sigma, 300)
+
+mu_biased = 2
+sigma_biased = 1.75*sigma
+
+plt.subplot(121)
+plt.title('Mean Translation')
+plt.grid()
+plt.plot(x, stats.norm.pdf(x, mu, sigma), label='original density f', color='red')
+plt.plot(x, stats.norm.pdf(x, mu_biased, sigma), label='biased density g', color='blue')
+plt.plot(x, stats.norm.pdf(x, mu_biased, sigma))
+plt.legend()
+
+plt.subplot(122)
+plt.title('Variance Scaling')
+plt.grid()
+plt.plot(x, stats.norm.pdf(x, mu, sigma), label='original density f', color='red')
+plt.plot(x, stats.norm.pdf(x, mu, sigma_biased), label='biased density g', color='blue')
+plt.legend()
+
+plt.show()

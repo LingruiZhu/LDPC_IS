@@ -56,7 +56,7 @@ def sort_ts(ts_file, ldpc_paras):
             ts = ts_dict[key][i]
             de_square = search_boundary(ts, ldpc_paras)
             ts_sort_list.append([ts, de_square])
-            print('trapping set size: ' + key)
+            print('trapping set size: ' + str(key))
             print('de square is %f' % de_square)
 
     ts_sort_list = sorted(ts_sort_list, key=itemgetter(1))

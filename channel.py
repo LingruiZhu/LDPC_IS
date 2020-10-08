@@ -27,7 +27,7 @@ def awgn_IS(x, snr, bias_bits, mode='VS'):
     rng = rnd.default_rng(now.microsecond)
     sig_power = signal_power(x.flatten())
     linear_snr = 10 ** (snr / 10)
-    noise_sigma = sig_power / linear_snr
+    noise_sigma = np.sqrt(sig_power / linear_snr)
 
     n_trials, n = x.shape
 
@@ -73,8 +73,9 @@ def awgn_MIS(x, snr, bias_bits, epsilon, mode = 'MT'):
     sig_power = signal_power(x.flatten())
     mu = 0
     linear_snr = 10 ** (snr / 10)
-    sigma = sig_power / linear_snr
+    sigma = np.sqrt(sig_power / linear_snr)
     mu_biased = epsilon
+    sigma_biased = 2.5*sigma
 
     def calc_w_denominator(rv_vec):
         if rv_vec.ndim != 1:
@@ -88,7 +89,12 @@ def awgn_MIS(x, snr, bias_bits, epsilon, mode = 'MT'):
             bits = bias_bits[i]
             for j in range(n):
                 if j in bits:
-                    p_temp = p_temp * stats.norm.pdf(rv_vec[j], mu_biased, sigma)
+                    if mode == 'MT':
+                        p_temp = p_temp * stats.norm.pdf(rv_vec[j], mu_biased, sigma)
+                    elif mode == 'VS':
+                        p_temp = p_temp * stats.norm.pdf(rv_vec[j], mu, sigma_biased)
+                    else:
+                        input('please set parameter-mode correctly.')
                 else:
                     p_temp = p_temp * stats.norm.pdf(rv_vec[j], mu, sigma)
             p.append(p_temp)
@@ -112,10 +118,14 @@ def awgn_MIS(x, snr, bias_bits, epsilon, mode = 'MT'):
     weights = np.zeros([m], dtype=float)
     for i in range(m):
         bits_biasd = bias_bits[i]
-        # print(bits_biasd)
         noise[i, :] = rng.normal(mu, sigma, x.shape)
         for bit in bits_biasd:
-            noise[i, bit] = rng.normal(mu_biased, sigma, 1)
+            if mode == 'MT':
+                noise[i, bit] = rng.normal(mu_biased, sigma, 1)
+            elif mode == 'VS':
+                noise[i, bit] = rng.normal(mu, sigma_biased, 1)
+            else:
+                input('please set parameter-mode correctly.')
         denom = calc_w_denominator(noise[i,:])
         num = calc_w_nominator(noise[i,:])
         weights[i] = num / denom
